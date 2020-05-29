@@ -25,9 +25,14 @@ CudaCuts cuts;
 void loadFile(char *filename);
 void writePGM(char *filename);
 
-int main()
+int main(int argc, char* argv[])
 {
-	loadFile("data/person.txt");
+	if(argc != 2)
+	{
+		printf("usage: <datafilename.txt>");
+	}
+	char* dataFile = argv[1];
+	loadFile(dataFile);
 
 	int initCheck = cuts.cudaCutsInit(cuts.width, cuts.height, cuts.num_Labels);
 
@@ -242,8 +247,11 @@ void loadFile(char *filename)
 
 	fclose(fp);
 	smoothCostArray = (int*)malloc(sizeof(int)*nLabels * nLabels);
-	smoothCostArray[0] = 0;
-	smoothCostArray[1] = 1;
-	smoothCostArray[2] = 1;
-	smoothCostArray[3] = 0;
+	for(int i = 0; i < nLabels; i++)
+	{
+		for(int j = 0; j < nLabels; j++)
+		{
+			smoothCostArray[i*nLabels + j] = abs(i-j);
+		}
+	}
 }
