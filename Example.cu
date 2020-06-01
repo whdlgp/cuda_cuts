@@ -103,51 +103,66 @@ int main(int argc, char* argv[])
 		printf("Error: Please check the device present on the system\n");
 	}
 
-	int setup_alpha_label = cuts.cudaCutsSetupAlpha(1);
-	printf("Graph will be constructed with alpha %d \n", setup_alpha_label);
-
-	int graphCheck = cuts.cudaCutsSetupGraph();
-
-	if (graphCheck == 0)
+	if(cuts.num_Labels > 2)
 	{
-		printf("The graph is constructed successfully\n");
+		// We don't care about label zero
+		for(int i = 1; i < cuts.num_Labels; i++)
+		{
+			cuts.cudaCutsSetupAlpha(i);
+			cuts.cudaCutsSetupGraph();
+			cuts.cudaCutsStochasticOptimize();
+			cuts.cudaCutsGetResult();
+		}
 	}
 	else
-	if (graphCheck == -1)
 	{
-		printf("Error: Please check the device present on the system\n");
+		int setup_alpha_label = cuts.cudaCutsSetupAlpha(1);
+		printf("Graph will be constructed with alpha %d \n", setup_alpha_label);
+	
+		int graphCheck = cuts.cudaCutsSetupGraph();
+	
+		if (graphCheck == 0)
+		{
+			printf("The graph is constructed successfully\n");
+		}
+		else
+		if (graphCheck == -1)
+		{
+			printf("Error: Please check the device present on the system\n");
+		}
+	
+		int optimizeCheck = -1;
+		if (initCheck == 1)
+		{
+			//CudaCuts involving atomic operations are called
+			//optimizeCheck = cuts.cudaCutsNonAtomicOptimize();
+			//CudaCuts involving stochastic operations are called
+			optimizeCheck = cuts.cudaCutsStochasticOptimize();
+		}
+	
+		if (optimizeCheck == 0)
+		{
+			printf("The algorithm successfully converged\n");
+		}
+		else
+		if (optimizeCheck == -1)
+		{
+			printf("Error: Please check the device present on the system\n");
+		}
+	
+		int resultCheck = cuts.cudaCutsGetResult();
+	
+		if (resultCheck == 0)
+		{
+			printf("The pixel labels are successfully stored\n");
+		}
+		else
+		if (resultCheck == -1)
+		{
+			printf("Error: Please check the device present on the system\n");
+		}
 	}
 
-	int optimizeCheck = -1;
-	if (initCheck == 1)
-	{
-		//CudaCuts involving atomic operations are called
-		//optimizeCheck = cuts.cudaCutsNonAtomicOptimize();
-		//CudaCuts involving stochastic operations are called
-		optimizeCheck = cuts.cudaCutsStochasticOptimize();
-	}
-
-	if (optimizeCheck == 0)
-	{
-		printf("The algorithm successfully converged\n");
-	}
-	else
-	if (optimizeCheck == -1)
-	{
-		printf("Error: Please check the device present on the system\n");
-	}
-
-	int resultCheck = cuts.cudaCutsGetResult();
-
-	if (resultCheck == 0)
-	{
-		printf("The pixel labels are successfully stored\n");
-	}
-	else
-	if (resultCheck == -1)
-	{
-		printf("Error: Please check the device present on the system\n");
-	}
 
 	writePGM("result_sponge/flower_cuda_test.pgm");
 
