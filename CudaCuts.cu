@@ -777,3 +777,13 @@ void CudaCuts::cudaCutsFreeMem()
 	
 	CUDA_SAFE_CALL(cudaFree(dPixelLabel));
 }
+
+void CudaCuts::cudaCutsResetMem()
+{
+	cudaMemset(d_left_weight, 0, sizeof(int)* graph_size1);
+	cudaMemset(d_right_weight, 0, sizeof(int)* graph_size1);
+	cudaMemset(d_down_weight, 0, sizeof(int)* graph_size1);
+	cudaMemset(d_up_weight, 0, sizeof(int)* graph_size1);
+	cudaMemset(d_push_reser, 0, sizeof(int)* graph_size1);
+	cudaMemset(d_sink_weight, 0, sizeof(int)* graph_size1);
+}

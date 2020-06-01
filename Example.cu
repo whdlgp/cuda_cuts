@@ -106,12 +106,16 @@ int main(int argc, char* argv[])
 	if(cuts.num_Labels > 2)
 	{
 		// We don't care about label zero
-		for(int i = 1; i < cuts.num_Labels; i++)
+		for(int i = 0; i < cuts.num_Labels; i++)
 		{
+			cuts.cudaCutsResetMem();
 			cuts.cudaCutsSetupAlpha(i);
 			cuts.cudaCutsSetupGraph();
 			cuts.cudaCutsStochasticOptimize();
 			cuts.cudaCutsGetResult();
+			char name[40];
+			sprintf(name, "tmp%d.pgm", i);
+			writePGM(name);
 		}
 	}
 	else
