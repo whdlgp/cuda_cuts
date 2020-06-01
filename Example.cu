@@ -18,6 +18,8 @@
 
 #include "CudaCuts.h"
 
+#include "opencv2/opencv.hpp"
+
 using namespace std;
 
 CudaCuts cuts;
@@ -101,6 +103,8 @@ int main(int argc, char* argv[])
 		printf("Error: Please check the device present on the system\n");
 	}
 
+	int setup_alpha_label = cuts.cudaCutsSetupAlpha(1);
+	printf("Graph will be constructed with alpha %d \n", setup_alpha_label);
 
 	int graphCheck = cuts.cudaCutsSetupGraph();
 
@@ -169,7 +173,7 @@ void writePGM(char* filename)
 		int row = i / cuts.width1, col = i % cuts.width1;
 
 		if (row >= 0 && col >= 0 && row <= cuts.height - 1 && col <= cuts.width - 1)
-			out_pixel_values[row][col] = cuts.pixelLabel[i] * 255;
+			out_pixel_values[row][col] = (int)(float(cuts.pixelLabel[i])/(cuts.num_Labels-1) * 255);
 	}
 	FILE* fp = fopen(filename, "w");
 
@@ -191,7 +195,6 @@ void writePGM(char* filename)
 		free(out_pixel_values[i]);
 	free(out_pixel_values);
 }
-
 
 void loadFile(char *filename)
 {
@@ -252,6 +255,7 @@ void loadFile(char *filename)
 		for(int j = 0; j < nLabels; j++)
 		{
 			smoothCostArray[i*nLabels + j] = abs(i-j);
+			//smoothCostArray[i*nLabels + j] = (i == j) ? 0 : 255;
 		}
 	}
 }

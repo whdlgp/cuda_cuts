@@ -125,6 +125,12 @@ public:
 	int cudaCutsSetupHCue();
 	int cudaCutsSetupVCue();
 
+	/***************************************************************
+	* This function set-up alpha value for multi-label problem    **
+	* *************************************************************/
+
+	int cudaCutsSetupAlpha(int alpha);
+
 	/*********************************************************
 	* This function constructs the graph on the device.    **
 	* ******************************************************/
@@ -207,7 +213,7 @@ public:
 	/***************************************************
 	* Label of each pixel is stored in this function **
 	* *************************************************/
-
+	
 	int *pixelLabel;
 
 	bool *d_pixel_mask, h_over, *d_over, *h_pixel_mask;
@@ -217,6 +223,11 @@ public:
 
 	int *h_stochastic, *h_stochastic_pixel, *h_relabel_mask;
 	int counter;
+
+	/***************************************************
+	* Seleted Alpha label for multi-label problem     **
+	* *************************************************/
+	int alpha_label;
 
 };
 

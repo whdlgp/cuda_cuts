@@ -264,14 +264,17 @@ int CudaCuts::cudaCutsSetupVCue()
 	return 0;
 }
 
+int CudaCuts::cudaCutsSetupAlpha(int alpha)
+{
+	alpha_label = alpha;
+	return alpha_label;
+}
 
 int CudaCuts::cudaCutsSetupGraph()
 {
 
 	if (deviceCheck < 1)
 		return -1;
-
-	int alpha_label = 1;
 
 	for (int i = 0; i < graph_size1; i++)
 	{
@@ -287,13 +290,13 @@ int CudaCuts::cudaCutsSetupGraph()
 	{
 		CudaWeightCue << < grid_weight, block_weight >> >(alpha_label, d_left_weight, d_right_weight, d_down_weight,
 			d_up_weight, d_push_reser, d_sink_weight, dPixelLabel, dDataTerm,
-			dSmoothTerm, dHcue, dVcue, width, height, 2);
+			dSmoothTerm, dHcue, dVcue, width, height, num_Labels);
 	}
 	else
 	{
 		CudaWeight << < grid_weight, block_weight >> >(alpha_label, d_left_weight, d_right_weight, d_down_weight,
 			d_up_weight, d_push_reser, d_sink_weight, dPixelLabel, dDataTerm,
-			dSmoothTerm, width, height, 2);
+			dSmoothTerm, width, height, num_Labels);
 
 	}
 
@@ -710,13 +713,12 @@ int CudaCuts::cudaCutsGetResult()
 	if (deviceCheck < 1)
 		return -1;
 
-	int alpha = 1;
 
 	for (int i = 0; i < graph_size1; i++)
 	{
 		int row_here = i / width1, col_here = i % width1;
 		if (h_graph_height[i]>0 && row_here < height && row_here > 0 && col_here < width && col_here > 0) {
-			pixelLabel[i] = alpha;
+			pixelLabel[i] = alpha_label;
 		}
 	}
 
