@@ -106,7 +106,8 @@ int main(int argc, char* argv[])
 	if(cuts.num_Labels > 2)
 	{
 		// We don't care about label zero
-		for(int i = 0; i < cuts.num_Labels; i++)
+		//for(int i = 0; i < cuts.num_Labels; i++)
+		for(int i = cuts.num_Labels-1; i >= 0 ; i--)
 		{
 			cuts.cudaCutsResetMem();
 			cuts.cudaCutsSetupAlpha(i);

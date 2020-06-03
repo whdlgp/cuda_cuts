@@ -1159,7 +1159,21 @@ int vertex_num1, int width1, int height1, bool *g_over, int *g_counter)
 	}
 }
 
+__global__
+void updatePixelLabel(int alpha_label, int *dPixelLabel, int *g_graph_height, int graph_size1,
+					  int width, int height, int width1, int height1)
+{
+	int thid = blockIdx.x * 256 + threadIdx.x;
 
+	if (thid < graph_size1)
+	{		
+		int row_here = thid / width1, col_here = thid % width1;
+		if (g_graph_height[thid] > 0 && row_here < height && row_here > 0 && col_here < width && col_here > 0)
+		{
+			dPixelLabel[row_here*width + col_here] = alpha_label;
+		}
+	}
+}
 
 /************************************************************
 * functions to construct the graph on the device          **

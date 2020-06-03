@@ -704,7 +704,7 @@ void CudaCuts::bfsLabeling()
 		CUDA_SAFE_CALL(cudaMemcpy(d_counter, &counter, sizeof(int), cudaMemcpyHostToDevice));
 	} while (h_over);
 
-	CUDA_SAFE_CALL(cudaMemcpy(h_graph_height, d_graph_heightr, size_int, cudaMemcpyDeviceToHost));
+	updatePixelLabel<<<d_grid, d_block, 0>>>(alpha_label, dPixelLabel, d_graph_heightr, graph_size1, width, height, width1, height1);
 }
 
 
@@ -713,6 +713,7 @@ int CudaCuts::cudaCutsGetResult()
 	if (deviceCheck < 1)
 		return -1;
 
+	CUDA_SAFE_CALL(cudaMemcpy(h_graph_height, d_graph_heightr, size_int, cudaMemcpyDeviceToHost));
 
 	for (int i = 0; i < graph_size1; i++)
 	{

@@ -313,6 +313,10 @@ kernel_bfs(int *g_left_weight, int *g_right_weight, int *g_down_weight, int *g_u
 int *g_graph_height, bool *g_pixel_mask, int vertex_num, int width, int height,
 int vertex_num1, int width1, int height1, bool *g_over, int *g_counter);
 
+__global__
+void updatePixelLabel(int alpha_label, int *dPixelLabel, int *g_graph_height, int graph_size1,
+					  int width, int height, int width1, int height1);
+
 __device__
 void add_edge(int from, int to, int cap, int rev_cap, int type, int *d_left_weight,
 int *d_right_weight, int *d_down_weight, int *d_up_weight);
