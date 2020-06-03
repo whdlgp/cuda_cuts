@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <vector>
+
 #include "cuda_runtime.h"
 #include "cuda.h"
 
@@ -61,6 +63,23 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 
 class CudaCuts {
 public:
+	/********************************************************************
+	* CudaCuts constructor and destructor. It will be initialized with **
+	* graph information that has grid structure                        **
+	* width           :  width of grid                                 **
+	* height          : height of grid                                 **
+	* numOfLabels     : number of labels,                              **
+	*                   multi-label will be more than 2                **
+	* dataTerm_error  : Data term(or Unary term) error                 **
+	* smoothness_table: Smoothness Error function table                **
+	* hcue            : Smoothness weight of horizotal direction       **
+	* vcue            : Smoothness weight of vertical direction        **
+	* *****************************************************************/
+	CudaCuts(int width, int height, int numOfLabels, int* dataTerm_error, int* smoothness_table, int* hcue, int* vcue);
+	~CudaCuts();
+
+	void run(std::vector<int> labels);
+
 	/********************************************************************
 	* cudaCutsInit(width, height, numOfLabels) function sets the      **
 	* width, height and numOfLabels of grid. It also initializes the  **

@@ -18,14 +18,24 @@
 
 #include "CudaCuts.h"
 
-#include "opencv2/opencv.hpp"
+#include <algorithm>
 
 using namespace std;
 
-CudaCuts cuts;
+typedef struct inputfile_t
+{
+	char* filename;
+	int width;
+	int height;
+	int numOfLabels;
+	int* dataterm_error;
+	int* smoothness_table;
+	int* hcue;
+	int* vcue;
+}inputfile_t;
 
-void loadFile(char *filename);
-void writePGM(char *filename);
+void loadFile(inputfile_t& input_file);
+void writePGM(const char *filename, CudaCuts& cuts);
 
 int main(int argc, char* argv[])
 {
@@ -34,149 +44,31 @@ int main(int argc, char* argv[])
 		printf("usage: <datafilename.txt>");
 	}
 	char* dataFile = argv[1];
-	loadFile(dataFile);
 
-	int initCheck = cuts.cudaCutsInit(cuts.width, cuts.height, cuts.num_Labels);
+	// Read input file
+	inputfile_t input_file;
+	input_file.filename = dataFile;
+	loadFile(input_file);
 
-	printf("Compute Capability %d\n", initCheck);
+	// Set-up graph with input
+	CudaCuts cuts(input_file.width, input_file.height, input_file.numOfLabels
+				, input_file.dataterm_error, input_file.smoothness_table
+				, input_file.hcue, input_file.vcue);
 
-	if (initCheck > 0)
-	{
-		printf("The grid is initialized successfully\n");
-	}
-	else
-	if (initCheck == -1)
-	{
-		printf("Error: Please check the device present on the system\n");
-	}
-
-	int dataCheck = cuts.cudaCutsSetupDataTerm();
-
-	if (dataCheck == 0)
-	{
-		printf("The dataterm is set properly\n");
-
-	}
-	else
-	if (dataCheck == -1)
-	{
-		printf("Error: Please check the device present on the system\n");
-	}
-
-
-	int smoothCheck = cuts.cudaCutsSetupSmoothTerm();
-
-
-	if (smoothCheck == 0)
-	{
-		printf("The smoothnessterm is set properly\n");
-	}
-	else
-	if (smoothCheck == -1)
-	{
-		printf("Error: Please check the device present on the system\n");
-	}
-
-
-	int hcueCheck = cuts.cudaCutsSetupHCue();
-
-	if (hcueCheck == 0)
-	{
-		printf("The HCue is set properly\n");
-	}
-	else
-	if (hcueCheck == -1)
-	{
-		printf("Error: Please check the device present on the system\n");
-	}
-
-	int vcueCheck = cuts.cudaCutsSetupVCue();
-
-
-	if (vcueCheck == 0)
-	{
-		printf("The VCue is set properly\n");
-	}
-	else
-	if (vcueCheck == -1)
-	{
-		printf("Error: Please check the device present on the system\n");
-	}
-
-	if(cuts.num_Labels > 2)
-	{
-		// We don't care about label zero
-		//for(int i = 0; i < cuts.num_Labels; i++)
-		for(int i = cuts.num_Labels-1; i >= 0 ; i--)
-		{
-			cuts.cudaCutsResetMem();
-			cuts.cudaCutsSetupAlpha(i);
-			cuts.cudaCutsSetupGraph();
-			cuts.cudaCutsStochasticOptimize();
-			cuts.cudaCutsGetResult();
-			char name[40];
-			sprintf(name, "tmp%d.pgm", i);
-			writePGM(name);
-		}
-	}
-	else
-	{
-		int setup_alpha_label = cuts.cudaCutsSetupAlpha(1);
-		printf("Graph will be constructed with alpha %d \n", setup_alpha_label);
+	// Generate input labels, 0 to (numOfLabels)
+	std::vector<int> labels(input_file.numOfLabels);
+	int n=0;
+	generate(labels.begin(), labels.end(), [&n] { return n++;});
+	cuts.run(labels);
 	
-		int graphCheck = cuts.cudaCutsSetupGraph();
-	
-		if (graphCheck == 0)
-		{
-			printf("The graph is constructed successfully\n");
-		}
-		else
-		if (graphCheck == -1)
-		{
-			printf("Error: Please check the device present on the system\n");
-		}
-	
-		int optimizeCheck = -1;
-		if (initCheck == 1)
-		{
-			//CudaCuts involving atomic operations are called
-			//optimizeCheck = cuts.cudaCutsNonAtomicOptimize();
-			//CudaCuts involving stochastic operations are called
-			optimizeCheck = cuts.cudaCutsStochasticOptimize();
-		}
-	
-		if (optimizeCheck == 0)
-		{
-			printf("The algorithm successfully converged\n");
-		}
-		else
-		if (optimizeCheck == -1)
-		{
-			printf("Error: Please check the device present on the system\n");
-		}
-	
-		int resultCheck = cuts.cudaCutsGetResult();
-	
-		if (resultCheck == 0)
-		{
-			printf("The pixel labels are successfully stored\n");
-		}
-		else
-		if (resultCheck == -1)
-		{
-			printf("Error: Please check the device present on the system\n");
-		}
-	}
-
-
-	writePGM("result_sponge/flower_cuda_test.pgm");
-
-	cuts.cudaCutsFreeMem();
+	//save output file
+	const char* output_name = "result_sponge/flower_cuda_test.pgm";
+	writePGM(output_name, cuts);
 
 	return 0;
 }
 
-void writePGM(char* filename)
+void writePGM(const char* filename, CudaCuts& cuts)
 {
 	int** out_pixel_values = (int**)malloc(sizeof(int*)*cuts.height);
 
@@ -193,7 +85,7 @@ void writePGM(char* filename)
 		int row = i / cuts.width1, col = i % cuts.width1;
 
 		if (row >= 0 && col >= 0 && row <= cuts.height - 1 && col <= cuts.width - 1)
-			out_pixel_values[row][col] = (int)(float(cuts.pixelLabel[i])/(cuts.num_Labels-1) * 255);
+			out_pixel_values[row][col] = (int)(float(cuts.pixelLabel[row*cuts.width + col])/(cuts.num_Labels-1) * 255);
 	}
 	FILE* fp = fopen(filename, "w");
 
@@ -216,18 +108,19 @@ void writePGM(char* filename)
 	free(out_pixel_values);
 }
 
-void loadFile(char *filename)
+void loadFile(inputfile_t& input_file)
 {
 	printf("enterd\n");
-	int &width = cuts.width;
-	int &height = cuts.height;
-	int &nLabels = cuts.num_Labels;
+	int &width = input_file.width;
+	int &height = input_file.height;
+	int &nLabels = input_file.numOfLabels;
 	
-	int *&dataCostArray = cuts.dataTerm;
-	int *&smoothCostArray = cuts.smoothTerm;
-	int *&hCue = cuts.hCue;
-	int *&vCue = cuts.vCue;
+	int *&dataCostArray = input_file.dataterm_error;
+	int *&smoothCostArray = input_file.smoothness_table;
+	int *&hCue = input_file.hcue;
+	int *&vCue = input_file.vcue;
 
+	char* filename = input_file.filename;
 	FILE *fp = fopen(filename, "r");
 
 	fscanf(fp, "%d %d %d", &width, &height, &nLabels);

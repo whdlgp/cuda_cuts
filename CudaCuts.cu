@@ -18,6 +18,97 @@
 
 #include "CudaCuts.h"
 
+CudaCuts::CudaCuts(int width, int height, int numOfLabels, int* dataTerm_error, int* smoothness_table, int* hcue, int* vcue)
+{
+	int initCheck = cudaCutsInit(width, height, numOfLabels);
+
+	dataTerm = dataTerm_error;
+	smoothTerm = smoothness_table;
+	hCue = hcue;
+	vCue = vcue;
+
+	printf("Compute Capability %d\n", initCheck);
+
+	if (initCheck > 0)
+	{
+		printf("The grid is initialized successfully\n");
+	}
+	else
+	if (initCheck == -1)
+	{
+		printf("Error: Please check the device present on the system\n");
+	}
+
+	int dataCheck = cudaCutsSetupDataTerm();
+
+	if (dataCheck == 0)
+	{
+		printf("The dataterm is set properly\n");
+
+	}
+	else
+	if (dataCheck == -1)
+	{
+		printf("Error: Please check the device present on the system\n");
+	}
+
+	int smoothCheck = cudaCutsSetupSmoothTerm();
+
+	if (smoothCheck == 0)
+	{
+		printf("The smoothnessterm is set properly\n");
+	}
+	else
+	if (smoothCheck == -1)
+	{
+		printf("Error: Please check the device present on the system\n");
+	}
+
+
+	int hcueCheck = cudaCutsSetupHCue();
+
+	if (hcueCheck == 0)
+	{
+		printf("The HCue is set properly\n");
+	}
+	else
+	if (hcueCheck == -1)
+	{
+		printf("Error: Please check the device present on the system\n");
+	}
+
+	int vcueCheck = cudaCutsSetupVCue();
+
+
+	if (vcueCheck == 0)
+	{
+		printf("The VCue is set properly\n");
+	}
+	else
+	if (vcueCheck == -1)
+	{
+		printf("Error: Please check the device present on the system\n");
+	}
+}
+
+CudaCuts::~CudaCuts()
+{
+	cudaCutsFreeMem();
+}
+
+void CudaCuts::run(std::vector<int> labels)
+{
+	for(int i = 0; i < num_Labels; i++)
+	//for(int i = num_Labels-1; i >= 0 ; i--)
+	{
+		cudaCutsResetMem();
+		cudaCutsSetupAlpha(labels[i]);
+		cudaCutsSetupGraph();
+		cudaCutsStochasticOptimize();
+	}
+	cudaCutsGetResult();
+}
+
 /********************************************************************
 * cudaCutsInit(width, height, numOfLabels) function sets the      **
 * width, height and numOfLabels of grid. It also initializes the  **
@@ -713,15 +804,7 @@ int CudaCuts::cudaCutsGetResult()
 	if (deviceCheck < 1)
 		return -1;
 
-	CUDA_SAFE_CALL(cudaMemcpy(h_graph_height, d_graph_heightr, size_int, cudaMemcpyDeviceToHost));
-
-	for (int i = 0; i < graph_size1; i++)
-	{
-		int row_here = i / width1, col_here = i % width1;
-		if (h_graph_height[i]>0 && row_here < height && row_here > 0 && col_here < width && col_here > 0) {
-			pixelLabel[i] = alpha_label;
-		}
-	}
+	CUDA_SAFE_CALL(cudaMemcpy(pixelLabel, dPixelLabel, size_int, cudaMemcpyDeviceToHost));
 
 	return 0;
 
